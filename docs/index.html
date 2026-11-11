@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LaraTool — Native Laravel &amp; PHP Local Environment for Windows</title>
+  <meta
+    name="description"
+    content="Native Windows desktop development environment for PHP, Node.js, and Laravel. Run PHP 8.0–8.5, Node.js LTS, Nginx, local *.test HTTPS via mkcert, 12 services, and Cloudflare/Ngrok tunnels with zero Docker or WSL2."
+  />
+  <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand">
+        <img src="./logo.svg" alt="LaraTool Logo" />
+        <span>LaraTool</span>
+        <span class="version-pill" data-release-tag>v1.0.0</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#services" data-i18n="nav.services">Services</a>
+        <a href="#architecture" data-i18n="nav.architecture">Architecture</a>
+        <a href="#download" data-i18n="nav.download">Download</a>
+      </nav>
+
+      <div class="header-actions">
+        <button id="lang-toggle" class="icon-btn" type="button" aria-label="Switch language">FR</button>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme">☀ Light</button>
+        <a
+          class="btn btn-primary btn-sm"
+          href="https://github.com/compao/laratool/releases/download/v1.0.0/LaraTool.Setup.1.0.0.exe"
+          data-dl-setup
+          data-i18n="nav.cta"
+        >Download v1.0.0</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-center">
+          <div class="hero-badge">
+            <span class="dot-pulse" aria-hidden="true"></span>
+            <span data-i18n="hero.badge">Windows 10 &amp; 11 (x64) • Native Win32 • Zero Docker / Zero WSL2</span>
+          </div>
+
+          <h1>
+            <span data-i18n="hero.title.pre">Native Laravel &amp; PHP Local Environment for </span>
+            <span class="accent-text" data-i18n="hero.title.accent">Windows.</span>
+          </h1>
+
+          <p class="hero-sub" data-i18n="hero.sub">
+            Run isolated PHP 8.0–8.5, Node.js LTS, Nginx, local *.test HTTPS via mkcert, 12 developer services, and public Cloudflare/Ngrok tunnels—with minimal tools pre-bundled out of the box.
+          </p>
+
+          <div class="hero-ctas">
+            <a
+              class="btn btn-primary"
+              href="https://github.com/compao/laratool/releases/download/v1.0.0/LaraTool.Setup.1.0.0.exe"
+              data-dl-setup
+              data-i18n="hero.dl.installer"
+            >Download Windows Installer (.exe)</a>
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/compao/laratool/releases/download/v1.0.0/LaraTool.1.0.0.exe"
+              data-dl-portable
+              data-i18n="hero.dl.portable"
+            >Portable .exe</a>
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/compao/laratool"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n="hero.github"
+            >View on GitHub</a>
+          </div>
+
+          <div class="bundle-strip">
+            <span data-i18n="hero.bundled">Pre-bundled out of the box:</span>
+            <span class="bundle-chip">Nginx</span>
+            <span class="bundle-chip">PHP 8.5 + Composer</span>
+            <span class="bundle-chip">Node.js LTS</span>
+            <span class="bundle-chip">mkcert</span>
+            <span class="bundle-chip">Ngrok</span>
+            <span class="bundle-chip">Cloudflared</span>
+          </div>
+        </div>
+
+        <!-- Interactive Desktop Mockup -->
+        <div class="app-mockup-wrap">
+          <div class="app-window" role="region" aria-label="LaraTool Desktop Interface Preview">
+            <div class="window-titlebar">
+              <div class="window-dots" aria-hidden="true">
+                <span style="background:#f43f5e"></span>
+                <span style="background:#f59e0b"></span>
+                <span style="background:#10b981"></span>
+              </div>
+              <span>LaraTool — Windows Local Environment</span>
+              <span style="font-family:var(--font-mono);color:#34d399;">● Running</span>
+            </div>
+
+            <div class="window-body">
+              <aside class="mock-sidebar">
+                <button class="mock-tab active" type="button" data-tab="dashboard">
+                  <span>Dashboard</span>
+                  <span class="mock-pill">OK</span>
+                </button>
+                <button class="mock-tab" type="button" data-tab="projects">
+                  <span>Projects</span>
+                  <span class="mock-pill">3</span>
+                </button>
+                <button class="mock-tab" type="button" data-tab="services">
+                  <span>Services</span>
+                  <span class="mock-pill">12</span>
+                </button>
+                <button class="mock-tab" type="button" data-tab="tunnels">
+                  <span>Tunnels</span>
+                  <span class="mock-pill">HTTPS</span>
+                </button>
+              </aside>
+
+              <div class="mock-main">
+                <!-- Panel 1: Dashboard -->
+                <div class="mock-panel active" id="panel-dashboard">
+                  <div class="mock-cards">
+                    <div class="mock-stat">
+                      <div class="mock-stat-label">Web Server</div>
+                      <div class="mock-stat-val"><span style="color:#10b981;">●</span> Nginx :80 / :443</div>
+                    </div>
+                    <div class="mock-stat">
+                      <div class="mock-stat-label">Default PHP FastCGI</div>
+                      <div class="mock-stat-val"><span style="color:#10b981;">●</span> PHP 8.5 (:9185)</div>
+                    </div>
+                    <div class="mock-stat">
+                      <div class="mock-stat-label">Default Node.js LTS</div>
+                      <div class="mock-stat-val"><span style="color:#38bdf8;">●</span> Node 26 LTS</div>
+                    </div>
+                  </div>
+                  <div class="mock-list">
+                    <div class="mock-row">
+                      <div><strong>shop.test</strong> — Laravel 12 • PHP 8.5 • mkcert TLS</div>
+                      <code>https://shop.test</code>
+                    </div>
+                    <div class="mock-row">
+                      <div><strong>billing-api.test</strong> — Laravel 11 • PHP 8.3 • Node 22</div>
+                      <code>https://billing-api.test</code>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Panel 2: Projects -->
+                <div class="mock-panel" id="panel-projects">
+                  <div class="mock-list">
+                    <div class="mock-row">
+                      <div>
+                        <strong>acme-saas</strong>
+                        <div style="font-size:0.76rem;color:#94a3b8;">C:\Users\dev\Projects\acme-saas</div>
+                      </div>
+                      <div class="mock-tags">
+                        <span class="mock-tag">PHP 8.5</span>
+                        <span class="mock-tag">Node 26</span>
+                        <span class="mock-tag" style="color:#34d399;">SSL Active</span>
+                      </div>
+                    </div>
+                    <div class="mock-row">
+                      <div>
+                        <strong>legacy-erp</strong>
+                        <div style="font-size:0.76rem;color:#94a3b8;">C:\Users\dev\Projects\legacy-erp</div>
+                      </div>
+                      <div class="mock-tags">
+                        <span class="mock-tag">PHP 8.1</span>
+                        <span class="mock-tag">Node 18</span>
+                        <span class="mock-tag">.laratool.json</span>
+                      </div>
+                    </div>
+                    <div class="mock-row">
+                      <div>
+                        <strong>artisan-tools</strong>
+                        <div style="font-size:0.76rem;color:#94a3b8;">Maintenance Off • Storage Linked • Live Logs</div>
+                      </div>
+                      <div class="mock-tags">
+                        <span class="mock-tag">PHP 8.4</span>
+                        <span class="mock-tag">Optimize</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Panel 3: Services -->
+                <div class="mock-panel" id="panel-services">
+                  <div class="mock-list">
+                    <div class="mock-row">
+                      <div><strong>MariaDB 11.4 LTS</strong> — Relational DB + 1-click DB creator</div>
+                      <code>127.0.0.1:3306</code>
+                    </div>
+                    <div class="mock-row">
+                      <div><strong>Redis 5.0.14 &amp; Meilisearch 1.12</strong> — Cache, Queues &amp; Scout</div>
+                      <code>:6379 / :7700</code>
+                    </div>
+                    <div class="mock-row">
+                      <div><strong>Mailpit 1.22</strong> — Local SMTP Email Catcher + Webmail</div>
+                      <code>SMTP :1025 • UI :8025</code>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Panel 4: Tunnels -->
+                <div class="mock-panel" id="panel-tunnels">
+                  <div class="mock-list">
+                    <div class="mock-row">
+                      <div>
+                        <strong>Cloudflare Tunnel (cloudflared)</strong>
+                        <div style="font-size:0.76rem;color:#94a3b8;">Zero-account quick HTTPS preview for shop.test</div>
+                      </div>
+                      <code>https://*.trycloudflare.com</code>
+                    </div>
+                    <div class="mock-row">
+                      <div>
+                        <strong>Ngrok v3 Stable</strong>
+                        <div style="font-size:0.76rem;color:#94a3b8;">Live HTTP request stream &amp; ping check</div>
+                      </div>
+                      <code>https://*.ngrok-free.app</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow" data-i18n="features.eyebrow">Built for Speed</div>
+          <h2 class="section-title" data-i18n="features.title">Everything Laravel &amp; PHP developers need on Windows</h2>
+          <p class="section-desc" data-i18n="features.desc">
+            Portable official binaries, zero container overhead, and instant per-project configuration.
+          </p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <div class="card-icon">PHP</div>
+            <h3 data-i18n="f1.title">Multi-Version PHP &amp; FastCGI</h3>
+            <p data-i18n="f1.desc">
+              Run PHP 8.0 through 8.5+ simultaneously on dedicated loopback FastCGI ports (9180–9185), edit php.ini, toggle extensions &amp; Xdebug, and use php/composer PATH shims.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon sky">JS</div>
+            <h3 data-i18n="f2.title">Node.js LTS &amp; CLI Shims</h3>
+            <p data-i18n="f2.desc">
+              Install and switch Node.js 18, 20, 22, 24, and 26 LTS per project or globally, with automatic node, npm, and npx batch shims in your Windows PATH.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon emerald">*.test</div>
+            <h3 data-i18n="f3.title">Nginx &amp; Automatic *.test Domains</h3>
+            <p data-i18n="f3.desc">
+              Scans your parked project folders, generates Nginx virtual hosts automatically, syncs Windows hosts entries, and flushes DNS in one click.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon emerald">TLS</div>
+            <h3 data-i18n="f4.title">Zero-Config Local HTTPS (mkcert)</h3>
+            <p data-i18n="f4.desc">
+              Installs a trusted Windows Root CA and generates wildcard *.test TLS certificates via mkcert so every local Laravel site runs smoothly over HTTPS.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon">CLI</div>
+            <h3 data-i18n="f5.title">Laravel Scaffolding &amp; Inspector</h3>
+            <p data-i18n="f5.desc">
+              5-step project creation wizard, artisan about diagnostics, maintenance mode toggle, cache clear/optimize, storage:link, Composer installer, and live laravel.log viewer.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon sky">URL</div>
+            <h3 data-i18n="f6.title">Cloudflare &amp; Ngrok Tunnels</h3>
+            <p data-i18n="f6.desc">
+              Expose any local site over a public HTTPS URL with one click using cloudflared or Ngrok v3, complete with real-time request logs and ping checks.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 Integrated Services -->
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow" data-i18n="services.eyebrow">12 Integrated Services</div>
+          <h2 class="section-title" data-i18n="services.title">One-click databases, caches, search, mail &amp; storage</h2>
+          <p class="section-desc" data-i18n="services.desc">
+            Install, start/stop, edit configs, copy .env snippets, and create relational databases without leaving LaraTool.
+          </p>
+        </div>
+
+        <div class="filter-bar" role="tablist" aria-label="Service Categories">
+          <button class="filter-btn active" type="button" data-filter="all" data-i18n="filter.all">All (12)</button>
+          <button class="filter-btn" type="button" data-filter="database" data-i18n="filter.database">Databases</button>
+          <button class="filter-btn" type="button" data-filter="cache" data-i18n="filter.cache">Cache &amp; Search</button>
+          <button class="filter-btn" type="button" data-filter="other" data-i18n="filter.other">Realtime, Storage &amp; Mail</button>
+        </div>
+
+        <div class="services-grid">
+          <div class="service-card" data-category="database">
+            <div class="service-top"><span class="service-name">MariaDB</span><span class="port-badge">:3306</span></div>
+            <span class="service-ver">11.4 LTS / 10.11</span>
+            <p class="service-desc">Standard MySQL-compatible engine with 1-click database creation.</p>
+          </div>
+
+          <div class="service-card" data-category="database">
+            <div class="service-top"><span class="service-name">PostgreSQL</span><span class="port-badge">:5432</span></div>
+            <span class="service-ver">17 / 16 LTS / 15</span>
+            <p class="service-desc">Advanced relational database engine ready for modern Laravel apps.</p>
+          </div>
+
+          <div class="service-card" data-category="database">
+            <div class="service-top"><span class="service-name">MongoDB</span><span class="port-badge">:27017</span></div>
+            <span class="service-ver">8.0 / 7.0 LTS</span>
+            <p class="service-desc">Document NoSQL database ready for laravel-mongodb workloads.</p>
+          </div>
+
+          <div class="service-card" data-category="database">
+            <div class="service-top"><span class="service-name">CouchDB</span><span class="port-badge">:5984</span></div>
+            <span class="service-ver">3.3.3</span>
+            <p class="service-desc">HTTP/JSON document database with built-in Fauxton web UI.</p>
+          </div>
+
+          <div class="service-card" data-category="cache">
+            <div class="service-top"><span class="service-name">Redis</span><span class="port-badge">:6379</span></div>
+            <span class="service-ver">5.0.14.1</span>
+            <p class="service-desc">In-memory store for Laravel Cache, Sessions, Queues &amp; Horizon.</p>
+          </div>
+
+          <div class="service-card" data-category="cache">
+            <div class="service-top"><span class="service-name">Memcached</span><span class="port-badge">:11211</span></div>
+            <span class="service-ver">1.6.29</span>
+            <p class="service-desc">Distributed high-speed object caching daemon for PHP.</p>
+          </div>
+
+          <div class="service-card" data-category="cache">
+            <div class="service-top"><span class="service-name">Meilisearch</span><span class="port-badge">:7700</span></div>
+            <span class="service-ver">1.12.3</span>
+            <p class="service-desc">Typo-tolerant full-text search engine for Laravel Scout.</p>
+          </div>
+
+          <div class="service-card" data-category="cache">
+            <div class="service-top"><span class="service-name">Typesense</span><span class="port-badge">:8108</span></div>
+            <span class="service-ver">27.1</span>
+            <p class="service-desc">Fast C++ search server and Scout driver alternative.</p>
+          </div>
+
+          <div class="service-card" data-category="realtime">
+            <div class="service-top"><span class="service-name">Laravel Reverb</span><span class="port-badge">:8080</span></div>
+            <span class="service-ver">WebSocket</span>
+            <p class="service-desc">Official first-party Laravel WebSocket broadcasting server.</p>
+          </div>
+
+          <div class="service-card" data-category="realtime">
+            <div class="service-top"><span class="service-name">Soketi</span><span class="port-badge">:6001</span></div>
+            <span class="service-ver">Pusher v7</span>
+            <p class="service-desc">Open-source Pusher-compatible WebSocket server in Node.js.</p>
+          </div>
+
+          <div class="service-card" data-category="storage">
+            <div class="service-top"><span class="service-name">SeaweedFS / S3</span><span class="port-badge">:8333</span></div>
+            <span class="service-ver">4.47 • UI :8888</span>
+            <p class="service-desc">S3-compatible local object storage with web explorer.</p>
+          </div>
+
+          <div class="service-card" data-category="mail">
+            <div class="service-top"><span class="service-name">Mailpit</span><span class="port-badge">:1025</span></div>
+            <span class="service-ver">1.22.3 • UI :8025</span>
+            <p class="service-desc">Local SMTP email catcher with instant webmail preview.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section" id="architecture">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow" data-i18n="arch.eyebrow">Clean &amp; Isolated</div>
+          <h2 class="section-title" data-i18n="arch.title">Zero system clutter. Everything stays in one directory.</h2>
+          <p class="section-desc" data-i18n="arch.desc">
+            LaraTool stores binaries, configs, SSL certs, databases, and logs neatly under %USERPROFILE%\.config\laratool\—leaving your Windows system clean.
+          </p>
+        </div>
+
+        <div class="arch-grid">
+          <pre class="code-panel" aria-label="Isolated runtime layout"><code><span class="c-rose">%USERPROFILE%\.config\laratool\</span>
+├── <span class="c-emerald">config.json</span>   <span class="c-dim"># Parked paths, ports, default PHP &amp; Node</span>
+├── <span class="c-emerald">bin\</span>          <span class="c-dim"># PATH shims (php.bat, composer.bat, node.bat, npm.bat)</span>
+│                 <span class="c-dim"># + composer.phar, mkcert.exe, ngrok.exe, cloudflared.exe</span>
+├── <span class="c-emerald">php\</span>          <span class="c-dim"># Isolated PHP runtimes (php-8.0 ... php-8.5+)</span>
+├── <span class="c-emerald">nodejs\</span>       <span class="c-dim"># Isolated Node.js runtimes (node-18 ... node-26)</span>
+├── <span class="c-emerald">nginx\</span>        <span class="c-dim"># Nginx Win32 + conf/conf.d/*.conf virtual hosts</span>
+├── <span class="c-emerald">servers\</span>      <span class="c-dim"># MariaDB, PostgreSQL, Redis, Meilisearch, Mailpit...</span>
+├── <span class="c-emerald">data\</span>         <span class="c-dim"># Persistent database &amp; search data directories</span>
+├── <span class="c-emerald">ssl\</span>          <span class="c-dim"># mkcert wildcard *.test certificates</span>
+└── <span class="c-emerald">logs\</span>         <span class="c-dim"># App, Nginx, PHP FastCGI, and service logs</span></code></pre>
+
+          <pre class="code-panel" aria-label="Development commands"><code><span class="c-dim"># Clone &amp; run LaraTool from source on Windows 10/11 x64</span>
+<span class="c-rose">git</span> clone https://github.com/compao/laratool.git
+<span class="c-rose">cd</span> laratool
+<span class="c-rose">npm</span> install
+
+<span class="c-dim"># Start Electron + Vite in development mode</span>
+<span class="c-rose">npm</span> run electron:dev
+
+<span class="c-dim"># Bundle latest minimal tools + build Windows installers</span>
+<span class="c-rose">npm</span> run electron:build</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section class="section" id="download">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow" data-i18n="dl.eyebrow">Get Started</div>
+          <h2 class="section-title" data-i18n="dl.title">Download LaraTool for Windows</h2>
+          <p class="section-desc" data-i18n="dl.desc">
+            Includes pre-bundled latest Nginx, PHP, Node.js LTS, Composer, mkcert, Ngrok, and Cloudflared.
+          </p>
+        </div>
+
+        <div class="download-grid">
+          <article class="dl-card featured">
+            <div>
+              <h3 data-i18n="dl.installer.title">Windows Installer (NSIS)</h3>
+              <p class="service-desc" data-i18n="dl.installer.desc">
+                Standard Windows setup wizard with Start Menu &amp; Desktop shortcuts and uninstaller.
+              </p>
+            </div>
+            <div>
+              <div class="dl-meta" id="setup-size">LaraTool.Setup.1.0.0.exe • 168.0 MB</div>
+              <a
+                class="btn btn-primary"
+                style="width:100%;margin-top:12px;"
+                href="https://github.com/compao/laratool/releases/download/v1.0.0/LaraTool.Setup.1.0.0.exe"
+                data-dl-setup
+                data-i18n="dl.installer.btn"
+              >Download Setup.exe</a>
+            </div>
+          </article>
+
+          <article class="dl-card">
+            <div>
+              <h3 data-i18n="dl.portable.title">Portable Executable</h3>
+              <p class="service-desc" data-i18n="dl.portable.desc">
+                Single standalone Windows executable—run directly without installation.
+              </p>
+            </div>
+            <div>
+              <div class="dl-meta" id="portable-size">LaraTool.1.0.0.exe • 149.9 MB</div>
+              <a
+                class="btn btn-secondary"
+                style="width:100%;margin-top:12px;"
+                href="https://github.com/compao/laratool/releases/download/v1.0.0/LaraTool.1.0.0.exe"
+                data-dl-portable
+                data-i18n="dl.portable.btn"
+              >Download Portable.exe</a>
+            </div>
+          </article>
+
+          <article class="dl-card">
+            <div>
+              <h3 data-i18n="dl.source.title">Build from Source</h3>
+              <p class="service-desc" data-i18n="dl.source.desc">
+                Requires Windows 10/11 x64 and Node.js 20+. Clone, install dependencies, and run locally.
+              </p>
+            </div>
+            <div>
+              <div class="dl-meta">MIT License • Electron 34 + Vue 3</div>
+              <a
+                class="btn btn-secondary"
+                style="width:100%;margin-top:12px;"
+                href="https://github.com/compao/laratool/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-i18n="dl.source.btn"
+              >Browse Releases</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>LaraTool</strong> — Open-source under the MIT License.
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/compao/laratool" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/compao/laratool/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="https://github.com/compao/laratool/blob/main/README.md" target="_blank" rel="noopener noreferrer">README</a>
+        <a href="https://github.com/compao/laratool/blob/main/PROJECT.md" target="_blank" rel="noopener noreferrer">Architecture</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
