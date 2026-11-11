@@ -42,6 +42,37 @@ class NodeManager {
     };
     this.latestUpdates = {};
     this._installedVersionCache = new Map();
+    this.registerInstalledMajors();
+  }
+
+  registerMajorMeta(major, fullVersion = null, npmVersion = null) {
+    if (this.versions[major]) return;
+    this.versions = {
+      [major]: {
+        version: major,
+        name: `Node.js ${major} LTS`,
+        fullVersion: fullVersion || `v${major}.0.0`,
+        npmVersion: npmVersion || null,
+        url: '',
+        archiveFolder: ''
+      },
+      ...this.versions
+    };
+  }
+
+  registerInstalledMajors() {
+    if (!fs.existsSync(systemHelper.nodeDir)) return;
+    try {
+      const dirs = fs.readdirSync(systemHelper.nodeDir);
+      for (const name of dirs) {
+        const m = name.match(/^node-(\d+)$/i);
+        if (!m) continue;
+        const major = m[1];
+        if (!this.versions[major] && this.isInstalled(major)) {
+          this.registerMajorMeta(major);
+        }
+      }
+    } catch {}
   }
 
   getNodeDir(version) {

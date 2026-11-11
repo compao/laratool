@@ -82,6 +82,7 @@ LaraTool/
 │       ├── NginxManager.js         # Nginx 1.26.2 lifecycle & vhost generation
 │       ├── NodeManager.js          # Multi-version Node.js & batch shims
 │       ├── PhpManager.js           # Multi-version PHP FastCGI, php.ini & extensions
+│       ├── PreinstalledTools.js    # First-run seeding of bundled minimal tools
 │       ├── ProcessSupervisor.js    # Background process supervision & clean shutdown
 │       ├── ProjectCreator.js       # Composer project scaffolding wizard backend
 │       ├── ProjectScanner.js       # Parked path scanning & Laravel inspection
@@ -89,7 +90,8 @@ LaraTool/
 │       ├── SystemHelper.js         # Isolated paths, config persistence & downloads
 │       └── TunnelManager.js        # Cloudflare Tunnel & Ngrok management
 ├── scripts/
-│   └── build-win.js                # Staging build helper for Windows packaging
+│   ├── build-win.js                # Staging build helper for Windows packaging
+│   └── prepare-preinstalled.js     # Fetches latest minimal tools into build/preinstalled/
 ├── src/
 │   ├── components/                 # Header, Sidebar, LogViewer, Inspector, UI kit
 │   ├── composables/                # Notification state composable
@@ -149,14 +151,16 @@ npm run dev
 ### Building for Production (Windows)
 
 ```bash
-# Build the Vue frontend
-npm run build
+# Optional: download/refresh latest minimal tools (Nginx, PHP, Node.js LTS, Composer, mkcert, Ngrok, Cloudflared)
+npm run preinstall:tools
 
-# Package Windows NSIS installer & portable executable into release/
+# Build the Vue frontend and package Windows NSIS installer & portable executable into release/
 npm run electron:build
 ```
 
-> **Tip (OneDrive / Cloud-Synced Folders):** If building inside a cloud-synced directory causes file-lock issues during NSIS packaging, use `node scripts/build-win.js`, which builds in `%TEMP%\laratool-release` and copies the final artifacts into `release/`.
+> **Bundled Minimal Tools:** `npm run electron:build` automatically bundles the latest Nginx, PHP (+ Composer), Node.js LTS, `mkcert`, Ngrok, and Cloudflared into `resources/preinstalled/` via `extraResources` and seeds them into `%USERPROFILE%\.config\laratool\` on first launch. To force-refresh cached downloads locally, run `node scripts/prepare-preinstalled.js --force`.
+
+> **Tip (OneDrive / Cloud-Synced Folders):** `npm run electron:build` uses `scripts/build-win.js`, which stages packaging in `%TEMP%\laratool-release` to avoid file-lock issues during NSIS packaging and copies the final artifacts into `release/`.
 
 ### Automated Releases
 

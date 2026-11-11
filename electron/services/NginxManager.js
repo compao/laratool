@@ -7,7 +7,38 @@ const certificateManager = require('./CertificateManager');
 
 class NginxManager {
   constructor() {
-    this.version = '1.26.2';
+    this.defaultVersion = '1.26.2';
+    this.refreshPaths();
+  }
+
+  resolveInstalledVersion() {
+    const config = systemHelper.getConfig();
+    if (config.nginxVersion) {
+      const configuredExe = path.join(systemHelper.nginxDir, `nginx-${config.nginxVersion}`, 'nginx.exe');
+      if (fs.existsSync(configuredExe)) {
+        return config.nginxVersion;
+      }
+    }
+
+    if (fs.existsSync(systemHelper.nginxDir)) {
+      try {
+        const dirs = fs.readdirSync(systemHelper.nginxDir)
+          .filter((name) => /^nginx-\d+\.\d+\.\d+$/i.test(name))
+          .filter((name) => fs.existsSync(path.join(systemHelper.nginxDir, name, 'nginx.exe')))
+          .map((name) => name.replace(/^nginx-/i, ''))
+          .sort((a, b) => systemHelper.compareVersions(b, a));
+
+        if (dirs.length > 0) {
+          return dirs[0];
+        }
+      } catch {}
+    }
+
+    return config.nginxVersion || this.defaultVersion;
+  }
+
+  refreshPaths() {
+    this.version = this.resolveInstalledVersion();
     this.downloadUrl = `https://nginx.org/download/nginx-${this.version}.zip`;
     this.nginxHome = path.join(systemHelper.nginxDir, `nginx-${this.version}`);
     this.confDir = path.join(this.nginxHome, 'conf');
@@ -15,6 +46,7 @@ class NginxManager {
   }
 
   getNginxExe() {
+    this.refreshPaths();
     return path.join(this.nginxHome, 'nginx.exe');
   }
 
@@ -22,13 +54,47 @@ class NginxManager {
     return fs.existsSync(this.getNginxExe());
   }
 
+  async resolveLatestDownloadVersion() {
+    try {
+      const https = require('https');
+      const html = await new Promise((resolve, reject) => {
+        const req = https.get('https://nginx.org/en/download.html', { timeout: 8000 }, (res) => {
+          if (res.statusCode !== 200) {
+            res.resume();
+            return reject(new Error(`HTTP ${res.statusCode}`));
+          }
+          let body = '';
+          res.setEncoding('utf8');
+          res.on('data', (c) => { body += c; });
+          res.on('end', () => resolve(body));
+        });
+        req.on('timeout', () => req.destroy(new Error('Timeout')));
+        req.on('error', reject);
+      });
+      const matches = [...html.matchAll(/\/download\/nginx-(\d+\.\d+\.\d+)\.zip/g)].map((m) => m[1]);
+      if (matches.length > 0) {
+        matches.sort((a, b) => systemHelper.compareVersions(b, a));
+        return matches[0];
+      }
+    } catch {}
+    return this.defaultVersion;
+  }
+
   async install(onProgress) {
     if (this.isInstalled()) return true;
+
+    const latestVersion = await this.resolveLatestDownloadVersion();
+    this.version = latestVersion;
+    this.downloadUrl = `https://nginx.org/download/nginx-${latestVersion}.zip`;
+    this.nginxHome = path.join(systemHelper.nginxDir, `nginx-${latestVersion}`);
+    this.confDir = path.join(this.nginxHome, 'conf');
+    this.confDDir = path.join(this.confDir, 'conf.d');
 
     const tempZip = path.join(systemHelper.rootDir, `temp-nginx-${this.version}.zip`);
     try {
       await systemHelper.downloadFile(this.downloadUrl, tempZip, onProgress);
       await systemHelper.extractZip(tempZip, systemHelper.nginxDir);
+      systemHelper.saveConfig({ nginxVersion: this.version });
 
       if (!fs.existsSync(this.confDDir)) {
         fs.mkdirSync(this.confDDir, { recursive: true });

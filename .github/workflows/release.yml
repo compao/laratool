@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Preinstall latest minimal tools (Nginx, PHP, Node.js, Composer, mkcert, Ngrok, Cloudflared)
+        run: npm run preinstall:tools
+
       - name: Build Windows installer & portable exe
         run: npm run electron:build
         env:

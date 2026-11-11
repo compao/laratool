@@ -15,6 +15,7 @@ function run(command) {
 fs.rmSync(stagingOutputDir, { recursive: true, force: true });
 fs.mkdirSync(stagingOutputDir, { recursive: true });
 
+run('node scripts/prepare-preinstalled.js');
 run('npx vite build');
 run(`npx electron-builder --win --publish never "--config.directories.output=${stagingOutputDir}"`);
 

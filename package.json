@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "preinstall:tools": "node scripts/prepare-preinstalled.js",
     "electron:build": "node scripts/build-win.js"
   },
   "keywords": [
@@ -48,6 +49,15 @@
       "dist/**/*",
       "electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/preinstalled",
+        "to": "preinstalled",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "icon": "build/icon.ico",

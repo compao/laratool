@@ -12,6 +12,7 @@ const nodeManager = require('./services/NodeManager');
 const certificateManager = require('./services/CertificateManager');
 const tunnelManager = require('./services/TunnelManager');
 const projectCreator = require('./services/ProjectCreator');
+const preinstalledTools = require('./services/PreinstalledTools');
 
 let mainWindow = null;
 let tray = null;
@@ -469,6 +470,11 @@ if (gotTheLock) {
   app.whenReady().then(async () => {
     // Clean up any zombie processes from prior abnormal exits
     await supervisor.cleanupOrphanedPids().catch(() => {});
+
+    // Seed bundled minimal tools (Nginx, PHP, Node.js, Composer, mkcert, Ngrok, Cloudflared) if missing
+    await preinstalledTools.seedIfNeeded().catch((err) => {
+      recordMainError('preinstalledTools.seedIfNeeded', err);
+    });
 
     // Strip X-Frame-Options and Content-Security-Policy frame-ancestors only for iframe previews
     session.defaultSession.webRequest.onHeadersReceived({ urls: ['*://*/*'] }, (details, callback) => {

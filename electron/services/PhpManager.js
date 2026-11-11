@@ -97,6 +97,39 @@ class PhpManager {
     };
     this.latestUpdates = {};
     this._installedVersionCache = new Map();
+    this.registerInstalledBranches();
+  }
+
+  registerBranchMeta(branch, latestVersion = null) {
+    if (this.versions[branch]) return;
+    const digits = String(branch).replace('.', '');
+    const port = 9100 + (parseInt(digits, 10) || 86);
+    this.versions = {
+      [branch]: {
+        version: branch,
+        name: `PHP ${branch}`,
+        latestVersion: latestVersion || `${branch}.0`,
+        port,
+        url: '',
+        fallbackUrl: ''
+      },
+      ...this.versions
+    };
+  }
+
+  registerInstalledBranches() {
+    if (!fs.existsSync(systemHelper.phpDir)) return;
+    try {
+      const dirs = fs.readdirSync(systemHelper.phpDir);
+      for (const name of dirs) {
+        const m = name.match(/^php-(\d+\.\d+)$/i);
+        if (!m) continue;
+        const branch = m[1];
+        if (!this.versions[branch] && this.isInstalled(branch)) {
+          this.registerBranchMeta(branch);
+        }
+      }
+    } catch {}
   }
 
   getPort(version) {
