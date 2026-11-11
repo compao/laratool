@@ -1,0 +1,70 @@
+{
+  "name": "laratool",
+  "version": "1.0.0",
+  "description": "Desktop PHP, Node and Laravel environment manager like Herd for Windows",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "node scripts/build-win.js"
+  },
+  "keywords": [
+    "laravel",
+    "herd",
+    "php",
+    "nginx",
+    "windows",
+    "desktop"
+  ],
+  "author": "LaraTool",
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "lucide-vue-next": "^0.475.0",
+    "node-fetch": "^2.7.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "electron": "^34.2.0",
+    "electron-builder": "^26.18.0",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.1.0",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.laratool.app",
+    "productName": "LaraTool",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LaraTool",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    }
+  }
+}
