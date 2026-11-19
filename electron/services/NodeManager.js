@@ -126,7 +126,7 @@ class NodeManager {
         return cached;
       }
 
-      const fullVersion = execSync(`"${nodeExe}" -v`, { encoding: 'utf-8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      const fullVersion = execSync(`"${nodeExe}" -v`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       let npmVersion = this.versions[version]?.npmVersion || null;
       const npmPkgPath = path.join(this.getNodeDir(version), 'node_modules', 'npm', 'package.json');
       if (fs.existsSync(npmPkgPath)) {
@@ -318,7 +318,7 @@ class NodeManager {
     const sysProgDir = 'C:\\Program Files\\nodejs';
     if (!isUpdate && !this.isInstalled(version) && fs.existsSync(path.join(sysProgDir, 'node.exe'))) {
       try {
-        const sysVer = execSync(`"${path.join(sysProgDir, 'node.exe')}" -v`, { encoding: 'utf-8' }).trim();
+        const sysVer = execSync(`"${path.join(sysProgDir, 'node.exe')}" -v`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
         if (sysVer.startsWith(`v${version}.`)) {
           if (onProgress) onProgress(30);
           this.copyDirRecursiveSync(sysProgDir, targetDir);

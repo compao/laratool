@@ -562,7 +562,7 @@ class ServiceManager {
       try {
         await systemHelper.downloadFile(downloadUrl, tempMsi, onProgress);
         await new Promise((resolve, reject) => {
-          exec(`msiexec /a "${tempMsi}" /qn TARGETDIR="${targetDir}"`, (err) => {
+          exec(`msiexec /a "${tempMsi}" /qn TARGETDIR="${targetDir}"`, { windowsHide: true }, (err) => {
             if (err) return reject(err);
             resolve(true);
           });
@@ -601,7 +601,7 @@ class ServiceManager {
       const isDataEmpty = !fs.existsSync(dataPath) || fs.readdirSync(dataPath).length === 0;
       if (isDataEmpty && fs.existsSync(installDbExe)) {
         await new Promise((resolve) => {
-          exec(`"${installDbExe}" --datadir="${dataPath}"`, { cwd: baseDir }, () => resolve(true));
+          exec(`"${installDbExe}" --datadir="${dataPath}"`, { cwd: baseDir, windowsHide: true }, () => resolve(true));
         });
       }
     } else if (serviceId === 'postgres') {
@@ -813,7 +813,7 @@ class ServiceManager {
     const cliToUse = fs.existsSync(mysqlCli) ? mysqlCli : fallbackCli;
 
     return new Promise((resolve, reject) => {
-      exec(`"${cliToUse}" -u root -h 127.0.0.1 -P ${port} -e "CREATE DATABASE IF NOT EXISTS \`${cleanDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"`, (err) => {
+      exec(`"${cliToUse}" -u root -h 127.0.0.1 -P ${port} -e "CREATE DATABASE IF NOT EXISTS \`${cleanDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"`, { windowsHide: true }, (err) => {
         if (err) return reject(new Error(`Erreur MySQL: ${err.message}`));
         resolve({ success: true, type: 'mysql', dbName: cleanDbName });
       });
@@ -844,14 +844,14 @@ class ServiceManager {
 
     return new Promise((resolve, reject) => {
       if (fs.existsSync(createdbCli)) {
-        exec(`"${createdbCli}" -U postgres -h 127.0.0.1 -p ${port} -E UTF8 "${cleanDbName}"`, (err) => {
+        exec(`"${createdbCli}" -U postgres -h 127.0.0.1 -p ${port} -E UTF8 "${cleanDbName}"`, { windowsHide: true }, (err) => {
           if (err && !err.message.includes('already exists')) {
             return reject(new Error(`Erreur PostgreSQL: ${err.message}`));
           }
           resolve({ success: true, type: 'postgres', dbName: cleanDbName });
         });
       } else if (fs.existsSync(psqlCli)) {
-        exec(`"${psqlCli}" -U postgres -h 127.0.0.1 -p ${port} -c "CREATE DATABASE \\"${cleanDbName}\\" ENCODING 'UTF8';"`, (err) => {
+        exec(`"${psqlCli}" -U postgres -h 127.0.0.1 -p ${port} -c "CREATE DATABASE \\"${cleanDbName}\\" ENCODING 'UTF8';"`, { windowsHide: true }, (err) => {
           if (err && !err.message.includes('already exists')) {
             return reject(new Error(`Erreur PostgreSQL: ${err.message}`));
           }

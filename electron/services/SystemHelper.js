@@ -20,8 +20,27 @@ class SystemHelper {
     this.logsDir = path.join(this.rootDir, 'logs');
     this.sslDir = path.join(this.rootDir, 'ssl');
     this.configPath = path.join(this.rootDir, 'config.json');
+    this._addedPaths = new Set();
 
     this.initDirectories();
+  }
+
+  resolveDefaultParkedPath() {
+    const candidates = [
+      path.join(os.homedir(), 'OneDrive', 'Documents', 'Projects'),
+      path.join(os.homedir(), 'Documents', 'Projects'),
+      path.join(os.homedir(), 'Projects')
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    const fallback = path.join(os.homedir(), 'Projects');
+    try {
+      fs.mkdirSync(fallback, { recursive: true });
+    } catch {}
+    return fallback;
   }
 
   initDirectories() {
@@ -35,7 +54,7 @@ class SystemHelper {
 
     if (!fs.existsSync(this.configPath)) {
       const defaultConfig = {
-        parkedPaths: [path.join(os.homedir(), 'OneDrive', 'Documents', 'Projects')],
+        parkedPaths: [this.resolveDefaultParkedPath()],
         defaultPhpVersion: '8.4',
         defaultNodeVersion: '22',
         nginxPort: 80,
@@ -59,7 +78,7 @@ class SystemHelper {
     if (this._hasWt !== undefined) return this._hasWt;
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe wt', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe wt', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       this._hasWt = !!(out && out.trim());
     } catch {
       this._hasWt = false;
@@ -91,7 +110,7 @@ class SystemHelper {
     }
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe cmder', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe cmder', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       if (out && out.trim()) {
         const found = out.trim().split(/\r?\n/)[0];
         if (fs.existsSync(found)) {
@@ -112,7 +131,7 @@ class SystemHelper {
     if (this._hasVsCode !== undefined) return this._hasVsCode;
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe code', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe code', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       this._hasVsCode = !!(out && out.trim());
     } catch {
       const defaultPaths = [
@@ -128,7 +147,7 @@ class SystemHelper {
     if (this._hasCursor !== undefined) return this._hasCursor;
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe cursor', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe cursor', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       this._hasCursor = !!(out && out.trim());
     } catch {
       const defaultPaths = [
@@ -143,7 +162,7 @@ class SystemHelper {
     if (this._hasPhpStorm !== undefined) return this._hasPhpStorm;
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe phpstorm', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe phpstorm', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       this._hasPhpStorm = !!(out && out.trim());
     } catch {
       this._hasPhpStorm = false;
@@ -155,7 +174,7 @@ class SystemHelper {
     if (this._hasSublime !== undefined) return this._hasSublime;
     try {
       const { execSync } = require('child_process');
-      const out = execSync('where.exe subl', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe subl', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       this._hasSublime = !!(out && out.trim());
     } catch {
       const defaultPaths = [
@@ -188,6 +207,13 @@ class SystemHelper {
     return this._hasGitBash;
   }
 
+  hasVcRedist() {
+    if (this._hasVcRedist !== undefined) return this._hasVcRedist;
+    const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+    this._hasVcRedist = fs.existsSync(path.join(sysRoot, 'System32', 'vcruntime140.dll'));
+    return this._hasVcRedist;
+  }
+
   getConfig() {
     let cfg = {};
     try {
@@ -212,6 +238,7 @@ class SystemHelper {
     cfg.hasSublime = this.hasSublime();
     cfg.hasNotepadPlusPlus = this.hasNotepadPlusPlus();
     cfg.hasGitBash = this.hasGitBash();
+    cfg.hasVcRedist = this.hasVcRedist();
 
     cfg.rootDir = this.rootDir;
     cfg.binDir = this.binDir;
@@ -423,6 +450,10 @@ class SystemHelper {
                     fs.unlinkSync(destPath);
                   }
                   fs.renameSync(tempPath, destPath);
+                  const lowerDest = destPath.toLowerCase();
+                  if (lowerDest.endsWith('.exe') || lowerDest.endsWith('.dll')) {
+                    return this.signBinaries(destPath).finally(() => resolve());
+                  }
                   resolve();
                 } catch (e) {
                   cleanupTemp();
@@ -458,7 +489,7 @@ class SystemHelper {
           try {
             const zip = new AdmZip(zipPath);
             zip.extractAllTo(targetDir, true);
-            resolve(true);
+            this.signBinaries(targetDir).finally(() => resolve(true));
           } catch (admErr) {
             reject(admErr);
           }
@@ -467,7 +498,9 @@ class SystemHelper {
         if (process.platform === 'win32') {
           const { execFile } = require('child_process');
           execFile('tar.exe', ['-xf', zipPath, '-C', targetDir], { windowsHide: true }, (err) => {
-            if (!err) return resolve(true);
+            if (!err) {
+              return this.signBinaries(targetDir).finally(() => resolve(true));
+            }
             fallbackAdmZip();
           });
           return;
@@ -484,17 +517,32 @@ class SystemHelper {
    * Add a path to the Windows User PATH variable
    */
   async addUserPath(newPath) {
+    if (!newPath) return false;
+    if (this._addedPaths && this._addedPaths.has(newPath)) {
+      return true;
+    }
+    const currentEnvPath = (process.env.PATH || '').toLowerCase();
+    if (currentEnvPath.includes(newPath.toLowerCase())) {
+      if (this._addedPaths) this._addedPaths.add(newPath);
+      return true;
+    }
+
     return new Promise((resolve) => {
+      const escaped = newPath.replace(/'/g, "''");
       const psScript = `
         $path = [Environment]::GetEnvironmentVariable('Path', 'User')
-        if ($path -notlike '*${newPath}*') {
-          [Environment]::SetEnvironmentVariable('Path', "$path;${newPath}", 'User')
+        if ($path -notlike '*${escaped}*') {
+          $next = if ([string]::IsNullOrWhiteSpace($path)) { '${escaped}' } else { "$path;${escaped}" }
+          [Environment]::SetEnvironmentVariable('Path', $next, 'User')
           Write-Output 'ADDED'
         } else {
           Write-Output 'ALREADY_EXISTS'
         }
       `;
-      exec(`powershell -NoProfile -Command "${psScript.replace(/\n/g, ' ')}"`, (err, stdout) => {
+      exec(`powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "${psScript.replace(/\r?\n/g, ' ')}"`, { windowsHide: true }, (err) => {
+        if (!err && this._addedPaths) {
+          this._addedPaths.add(newPath);
+        }
         resolve(!err);
       });
     });
@@ -509,9 +557,9 @@ class SystemHelper {
     }
     const config = this.getConfig();
     const editor = config.preferredEditor || 'code';
-    exec(`${editor} "${filePath}"`, (err) => {
+    exec(`${editor} "${filePath}"`, { windowsHide: true }, (err) => {
       if (err) {
-        exec(`notepad.exe "${filePath}"`);
+        exec(`notepad.exe "${filePath}"`, { windowsHide: true });
       }
     });
     return { success: true, path: filePath };
@@ -526,9 +574,9 @@ class SystemHelper {
     }
     const isFile = fs.statSync(targetPath).isFile();
     if (isFile) {
-      exec(`explorer.exe /select,"${targetPath}"`);
+      exec(`explorer.exe /select,"${targetPath}"`, { windowsHide: true });
     } else {
-      exec(`explorer.exe "${targetPath}"`);
+      exec(`explorer.exe "${targetPath}"`, { windowsHide: true });
     }
     return { success: true, path: targetPath };
   }

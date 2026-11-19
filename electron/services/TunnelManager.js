@@ -32,7 +32,7 @@ class TunnelManager extends EventEmitter {
       } catch {}
     }
     try {
-      const out = execSync('where.exe cloudflared', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe cloudflared', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       if (out && out.trim()) {
         const found = out.trim().split(/\r?\n/)[0];
         if (fs.existsSync(found)) return found;
@@ -45,7 +45,7 @@ class TunnelManager extends EventEmitter {
     const cfExe = this.getCloudflaredPath();
     if (!cfExe) return null;
     try {
-      const out = execSync(`"${cfExe}" --version`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync(`"${cfExe}" --version`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       const match = out.match(/version\s+([0-9\.\-]+)/i);
       return match ? match[1] : out.trim();
     } catch {
@@ -59,7 +59,7 @@ class TunnelManager extends EventEmitter {
 
     // 2. Check system PATH
     try {
-      const out = execSync('where.exe ngrok', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe ngrok', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       if (out && out.trim()) {
         const found = out.trim().split(/\r?\n/)[0];
         if (fs.existsSync(found)) return found;
@@ -80,7 +80,7 @@ class TunnelManager extends EventEmitter {
     const ngrokExe = this.getNgrokPath();
     if (!ngrokExe) return null;
     try {
-      const out = execSync(`"${ngrokExe}" version`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync(`"${ngrokExe}" version`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       const match = out.match(/version\s+([0-9\.]+)/i);
       return match ? match[1] : out.trim();
     } catch {
@@ -117,7 +117,7 @@ class TunnelManager extends EventEmitter {
 
     // Secondary check: ngrok config check command
     try {
-      const out = execSync(`"${ngrokExe}" config check`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+      const out = execSync(`"${ngrokExe}" config check`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
       if (out && !out.toLowerCase().includes('error')) {
         return { installed: true, configured: true };
       }
@@ -140,7 +140,7 @@ class TunnelManager extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      exec(`"${ngrokExe}" config add-authtoken ${cleanToken}`, (err, stdout, stderr) => {
+      exec(`"${ngrokExe}" config add-authtoken ${cleanToken}`, { windowsHide: true }, (err, stdout, stderr) => {
         if (err) {
           return reject(new Error(`Erreur lors de la configuration de l'authtoken : ${stderr || err.message}`));
         }
@@ -214,7 +214,7 @@ class TunnelManager extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      exec(`"${ngrokExe}" update`, (err, stdout, stderr) => {
+      exec(`"${ngrokExe}" update`, { windowsHide: true }, (err, stdout, stderr) => {
         const version = this.getNgrokVersion();
         if (err) {
           // If update command failed (e.g. permission or old binary), try fresh download
@@ -321,7 +321,7 @@ class TunnelManager extends EventEmitter {
         // Fallback to curl.exe if Node stream had SSL/redirect issue
         await new Promise((resolve, reject) => {
           const tempExe = `${this.cloudflaredExe}.tmp`;
-          exec(`curl.exe -L -o "${tempExe}" "${this.cloudflaredDownloadUrl}"`, { maxBuffer: 20 * 1024 * 1024 }, (err) => {
+          exec(`curl.exe -L -o "${tempExe}" "${this.cloudflaredDownloadUrl}"`, { maxBuffer: 20 * 1024 * 1024, windowsHide: true }, (err) => {
             if (err) {
               if (fs.existsSync(tempExe)) try { fs.unlinkSync(tempExe); } catch {}
               return reject(new Error(`Téléchargement curl de cloudflared échoué : ${err.message}`));
@@ -647,7 +647,7 @@ class TunnelManager extends EventEmitter {
         if (record.pid) {
           if (process.platform === 'win32') {
             try {
-              execSync(`taskkill /pid ${record.pid} /f /t`, { stdio: 'ignore' });
+              execSync(`taskkill /pid ${record.pid} /f /t`, { windowsHide: true, stdio: 'ignore' });
             } catch {}
           }
         }

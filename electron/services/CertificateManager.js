@@ -34,7 +34,7 @@ class CertificateManager {
       return this._mkcertBin;
     }
     try {
-      const out = execSync('where.exe mkcert', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync('where.exe mkcert', { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       if (out && out.trim()) {
         const found = out.trim().split(/\r?\n/)[0];
         if (fs.existsSync(found)) {
@@ -79,7 +79,7 @@ class CertificateManager {
     const bin = this.getMkcertBin();
     if (!bin) return null;
     try {
-      const out = execSync(`"${bin}" -CAROOT`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync(`"${bin}" -CAROOT`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       if (out && out.trim()) {
         this.caRootDir = out.trim();
         return this.caRootDir;
@@ -114,6 +114,7 @@ class CertificateManager {
     return new Promise((resolve, reject) => {
       // Limit TRUST_STORES to system and nss (Firefox) to avoid Java keytool permission issues
       const options = {
+        windowsHide: true,
         env: { ...process.env, TRUST_STORES: 'system,nss' }
       };
       exec(`"${bin}" -install`, options, (err, stdout, stderr) => {
@@ -158,7 +159,7 @@ class CertificateManager {
     const tld = systemHelper.getConfig().tld || 'test';
     return new Promise((resolve, reject) => {
       const cmd = `"${bin}" -cert-file "${this.wildcardCert}" -key-file "${this.wildcardKey}" "*.${tld}" "*.test" "localhost" "127.0.0.1" "::1"`;
-      exec(cmd, { cwd: this.sslDir, env: { ...process.env, TRUST_STORES: 'system,nss' } }, (err, stdout, stderr) => {
+      exec(cmd, { cwd: this.sslDir, windowsHide: true, env: { ...process.env, TRUST_STORES: 'system,nss' } }, (err, stdout, stderr) => {
         this.invalidateCache();
         if (err && !this.isWildcardCertReady()) {
           return reject(new Error(`Impossible de générer le certificat wildcard : ${stderr || err.message}`));
@@ -218,7 +219,7 @@ class CertificateManager {
     const paths = this.getProjectCertPaths(domain);
     return new Promise((resolve, reject) => {
       const cmd = `"${bin}" -cert-file "${paths.cert}" -key-file "${paths.key}" "${domain}" "www.${domain}"`;
-      exec(cmd, { cwd: this.sslDir, env: { ...process.env, TRUST_STORES: 'system,nss' } }, (err, stdout, stderr) => {
+      exec(cmd, { cwd: this.sslDir, windowsHide: true, env: { ...process.env, TRUST_STORES: 'system,nss' } }, (err, stdout, stderr) => {
         if (err && !this.isProjectCertReady(domain)) {
           return reject(new Error(`Impossible de générer le certificat SSL pour ${domain} : ${stderr || err.message}`));
         }

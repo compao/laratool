@@ -289,6 +289,24 @@ server {
       throw new Error("Nginx n'est pas encore installé. Téléchargement nécessaire.");
     }
 
+    const port = await this.getEffectivePort();
+    if (!supervisor.isRunning('nginx') && await systemHelper.isPortInUse(port)) {
+      const pidFile = path.join(systemHelper.logsDir, 'nginx.pid');
+      if (fs.existsSync(pidFile)) {
+        try {
+          const orphanPid = fs.readFileSync(pidFile, 'utf-8').trim();
+          if (orphanPid) {
+            execSync(`taskkill /pid ${orphanPid} /f /t`, { windowsHide: true, stdio: 'ignore' });
+            await new Promise(r => setTimeout(r, 300));
+          }
+        } catch {}
+      }
+
+      if (await systemHelper.isPortInUse(port)) {
+        throw new Error(`Le port ${port} est déjà utilisé par un autre service Windows (ex: IIS / W3SVC ou Apache). Modifiez le port HTTP dans les Paramètres ou libérez le port ${port}.`);
+      }
+    }
+
     await this.writeMainConfig();
 
     const exe = this.getNginxExe();
@@ -323,7 +341,7 @@ server {
       try {
         const pid = fs.readFileSync(pidFile, 'utf-8').trim();
         if (pid) {
-          execSync(`taskkill /pid ${pid} /f /t`);
+          execSync(`taskkill /pid ${pid} /f /t`, { windowsHide: true, stdio: 'ignore' });
         }
       } catch (e) {}
     }

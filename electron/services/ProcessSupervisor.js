@@ -6,6 +6,7 @@ const systemHelper = require('./SystemHelper');
 class ProcessSupervisor {
   constructor() {
     this.processes = new Map(); // key -> { pid, child, logStream, status, stopping }
+    this.crashCounts = new Map();
   }
 
   /**
@@ -36,7 +37,7 @@ class ProcessSupervisor {
         try {
           process.kill(pid, 0); // verify if PID is still alive
           await new Promise((resolve) => {
-            exec(`taskkill /pid ${pid} /f /t`, () => resolve());
+            exec(`taskkill /pid ${pid} /f /t`, { windowsHide: true }, () => resolve());
           });
         } catch (e) {}
       }
@@ -117,7 +118,8 @@ class ProcessSupervisor {
       logStream,
       status: 'running',
       stopping: false,
-      startedAt: new Date().toISOString()
+      startedAt: new Date().toISOString(),
+      startedAtMs: Date.now()
     };
 
     child.on('error', (err) => {
@@ -132,8 +134,27 @@ class ProcessSupervisor {
       record.exitCode = code;
       this.safeWrite(logStream, `[${new Date().toISOString()}] Process Exited with code ${code}, signal ${signal}\n`);
 
+      const uptimeMs = Date.now() - record.startedAtMs;
+      let count = this.crashCounts.get(name) || 0;
+      if (uptimeMs < 3000 && !record.stopping) {
+        count += 1;
+        this.crashCounts.set(name, count);
+      } else {
+        count = 0;
+        this.crashCounts.set(name, 0);
+      }
+
       if (options.autoRestart && !record.stopping) {
-        this.safeWrite(logStream, `[${new Date().toISOString()}] Auto-restarting worker: ${name}\n`);
+        if (count >= 4 || code === 3221225781) {
+          this.safeWrite(logStream, `[${new Date().toISOString()}] [CircuitBreaker] Arrêt des redémarrages automatiques de ${name} après ${count} crashs rapides (code ${code}). Vérifiez Visual C++ Redistributable ou les conflits de port.\n`);
+          this.safeEnd(logStream);
+          this.processes.delete(name);
+          this.savePidRegistry();
+          return;
+        }
+
+        const delay = Math.min(500 * Math.pow(2, Math.max(0, count - 1)), 5000);
+        this.safeWrite(logStream, `[${new Date().toISOString()}] Auto-restarting worker: ${name} (dans ${delay}ms)\n`);
         this.safeEnd(logStream);
         setTimeout(() => {
           if (!record.stopping) {
@@ -143,7 +164,7 @@ class ProcessSupervisor {
               // New log stream will be created on next start
             }
           }
-        }, 500);
+        }, delay);
       } else {
         this.safeEnd(logStream);
         this.processes.delete(name);
@@ -167,7 +188,8 @@ class ProcessSupervisor {
       }
 
       record.stopping = true;
-      exec(`taskkill /pid ${record.pid} /f /t`, () => {
+      this.crashCounts.set(name, 0);
+      exec(`taskkill /pid ${record.pid} /f /t`, { windowsHide: true }, () => {
         this.safeEnd(record.logStream);
         this.processes.delete(name);
         this.savePidRegistry();

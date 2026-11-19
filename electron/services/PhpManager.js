@@ -223,7 +223,7 @@ class PhpManager {
       }
 
       const { execSync } = require('child_process');
-      const vOutput = execSync(`"${phpExe}" -n -v`, { encoding: 'utf-8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      const vOutput = execSync(`"${phpExe}" -n -v`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       const match = vOutput.match(/PHP\s+(\d+\.\d+\.\d+)/i);
       const fullVersion = match ? match[1] : null;
 
@@ -814,6 +814,10 @@ xdebug.idekey = ${idekey}
       throw new Error(`PHP ${version} n'est pas encore installé dans .config/laratool`);
     }
 
+    if (typeof systemHelper.hasVcRedist === 'function' && !systemHelper.hasVcRedist()) {
+      throw new Error("Microsoft Visual C++ Redistributable (x64) est requis (vcruntime140.dll introuvable). Installez vc_redist.x64.exe pour exécuter PHP.");
+    }
+
     const meta = this.versions[version];
     const cgiExe = this.getPhpCgiExe(version);
     const serviceName = `php-${version}`;
@@ -930,7 +934,7 @@ call "%~dp0php.bat" "%~dp0composer.phar" %*
 
       // 1. Get php -v
       try {
-        const vOutput = execSync(`"${phpExe}" -v`, { encoding: 'utf-8', timeout: 3000 }).trim();
+        const vOutput = execSync(`"${phpExe}" -v`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
         buildInfo = vOutput.split(/\r?\n/)[0] || '';
         if (vOutput.includes('NTS')) threadSafety = 'NTS';
         else if (vOutput.includes('TS')) threadSafety = 'TS';
@@ -944,7 +948,7 @@ call "%~dp0php.bat" "%~dp0composer.phar" %*
 
       // 2. Get loaded modules php -m
       try {
-        const mOutput = execSync(`"${phpExe}" -d xdebug.mode=off -m`, { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'ignore'] });
+        const mOutput = execSync(`"${phpExe}" -d xdebug.mode=off -m`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
         extensions = mOutput.split(/\r?\n/)
           .map(s => s.trim())
           .filter(s => s && !s.startsWith('[') && !s.endsWith(']'));
@@ -970,7 +974,7 @@ call "%~dp0php.bat" "%~dp0composer.phar" %*
           'xdebug_idekey' => ini_get('xdebug.idekey') ?: '',
           'xdebug_start_with_request' => ini_get('xdebug.start_with_request') ?: ''
         ]);`;
-        const iniOutput = execSync(`"${phpExe}" -d xdebug.mode=off -r "${phpCode.replace(/\r?\n/g, ' ')}"`, { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'ignore'] });
+        const iniOutput = execSync(`"${phpExe}" -d xdebug.mode=off -r "${phpCode.replace(/\r?\n/g, ' ')}"`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
         iniValues = JSON.parse(iniOutput.trim());
       } catch {}
 

@@ -8,6 +8,7 @@ class HostsManager {
     this.hostsPath = 'C:\\Windows\\System32\\drivers\\etc\\hosts';
     this.header = '# LaraTool generated Hosts. Do not change.';
     this.footer = '# End LaraTool generated Hosts';
+    this._uacDeclinedInSession = false;
   }
 
   escapeRegex(str) {
@@ -100,14 +101,25 @@ class HostsManager {
   /**
    * Write new content to hosts file (direct or elevated)
    */
-  async writeHosts(newContent, testDomain = null) {
+  async writeHosts(newContent, testDomain = null, options = {}) {
     // 1. First attempt: Direct write
     try {
       fs.writeFileSync(this.hostsPath, newContent, 'utf-8');
-      exec('ipconfig /flushdns');
+      exec('ipconfig /flushdns', { windowsHide: true });
+      this._uacDeclinedInSession = false;
       return { success: true, method: 'direct' };
     } catch (err) {
       // Direct write failed, proceed to UAC elevation
+    }
+
+    if (options.silent && this._uacDeclinedInSession) {
+      return {
+        success: false,
+        requiresAdmin: true,
+        skippedUac: true,
+        command: `icacls "${this.hostsPath}" /grant "*S-1-5-32-545:M"`,
+        message: 'Privilèges administrateur requis pour modifier le fichier hosts.'
+      };
     }
 
     // 2. Second attempt: Write via temporary file + elevated PowerShell Copy-Item
@@ -120,18 +132,20 @@ class HostsManager {
       const escapedDest = this.hostsPath.replace(/'/g, "''");
 
       // Use PowerShell Start-Process with -Verb RunAs and -Wait to synchronously hold until the elevated process exits
-      const psCommand = `Start-Process powershell -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -Path ''${escapedTemp}'' -Destination ''${escapedDest}'' -Force; ipconfig /flushdns"'`;
+      const psCommand = `Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -ArgumentList '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Copy-Item -LiteralPath ''${escapedTemp}'' -Destination ''${escapedDest}'' -Force; ipconfig /flushdns"'`;
 
       return new Promise((resolve) => {
-        exec(`powershell.exe -NoProfile -Command "${psCommand}"`, () => {
+        exec(`powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "${psCommand}"`, { windowsHide: true }, () => {
           try {
             if (fs.existsSync(tempHosts)) fs.unlinkSync(tempHosts);
           } catch {}
 
           const isOk = testDomain ? this.isConfigured(testDomain) : true;
           if (isOk) {
+            this._uacDeclinedInSession = false;
             resolve({ success: true, method: 'uac' });
           } else {
+            this._uacDeclinedInSession = true;
             resolve({
               success: false,
               requiresAdmin: true,
@@ -152,7 +166,7 @@ class HostsManager {
   /**
    * Synchronize domains to hosts, preserving all existing LaraTool domains
    */
-  async syncAll(domains) {
+  async syncAll(domains, options = {}) {
     if (!domains) domains = [];
     if (!Array.isArray(domains)) domains = [domains];
 
@@ -189,7 +203,7 @@ class HostsManager {
 
     const newContent = this.buildUpdatedContent(originalContent, allDomains);
     const testDomain = missingDomains[0] || cleanInputDomains[0] || allDomains[0];
-    const writeResult = await this.writeHosts(newContent, testDomain);
+    const writeResult = await this.writeHosts(newContent, testDomain, options);
 
     if (writeResult.success) {
       return {
@@ -208,6 +222,7 @@ class HostsManager {
     if (!domain || typeof domain !== 'string') {
       return { success: false, error: 'Nom de domaine invalide' };
     }
+    this._uacDeclinedInSession = false;
     return this.syncAll([domain]);
   }
 

@@ -138,7 +138,7 @@ class ProjectScanner {
     try {
       const allDomains = detectedSites.map(s => s.domain);
       if (allDomains.length > 0) {
-        await hostsManager.syncAll(allDomains);
+        await hostsManager.syncAll(allDomains, { silent: true });
       }
     } catch (hostsErr) {
       console.warn('[ProjectScanner] Failed to auto-sync hosts file:', hostsErr.message);
@@ -401,7 +401,7 @@ class ProjectScanner {
         PATH: pathDirs.join(';') + ';' + (process.env.PATH || '')
       };
 
-      exec(command, { cwd: projectPath, env, maxBuffer: 1024 * 1024 * 5 }, (err, stdout, stderr) => {
+      exec(command, { cwd: projectPath, env, maxBuffer: 1024 * 1024 * 5, windowsHide: true }, (err, stdout, stderr) => {
         resolve({
           success: !err,
           stdout: stdout || '',
