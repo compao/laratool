@@ -44,10 +44,15 @@ class TunnelManager extends EventEmitter {
   getCloudflaredVersion() {
     const cfExe = this.getCloudflaredPath();
     if (!cfExe) return null;
+    if (this._cloudflaredVersionCache && this._cloudflaredVersionCache.exe === cfExe) {
+      return this._cloudflaredVersionCache.version;
+    }
     try {
-      const out = execSync(`"${cfExe}" --version`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync(`"${cfExe}" --version`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       const match = out.match(/version\s+([0-9\.\-]+)/i);
-      return match ? match[1] : out.trim();
+      const version = match ? match[1] : out.trim();
+      this._cloudflaredVersionCache = { exe: cfExe, version };
+      return version;
     } catch {
       return null;
     }
@@ -79,10 +84,15 @@ class TunnelManager extends EventEmitter {
   getNgrokVersion() {
     const ngrokExe = this.getNgrokPath();
     if (!ngrokExe) return null;
+    if (this._ngrokVersionCache && this._ngrokVersionCache.exe === ngrokExe) {
+      return this._ngrokVersionCache.version;
+    }
     try {
-      const out = execSync(`"${ngrokExe}" version`, { encoding: 'utf-8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+      const out = execSync(`"${ngrokExe}" version`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
       const match = out.match(/version\s+([0-9\.]+)/i);
-      return match ? match[1] : out.trim();
+      const version = match ? match[1] : out.trim();
+      this._ngrokVersionCache = { exe: ngrokExe, version };
+      return version;
     } catch {
       return null;
     }
@@ -647,7 +657,7 @@ class TunnelManager extends EventEmitter {
         if (record.pid) {
           if (process.platform === 'win32') {
             try {
-              execSync(`taskkill /pid ${record.pid} /f /t`, { windowsHide: true, stdio: 'ignore' });
+              exec(`taskkill /pid ${record.pid} /f /t`, { windowsHide: true }, () => {});
             } catch {}
           }
         }

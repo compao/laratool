@@ -925,16 +925,43 @@ call "%~dp0php.bat" "%~dp0composer.phar" %*
     let availableDlls = [];
 
     if (installed) {
-      const { execSync } = require('child_process');
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
 
       // Ensure php.ini exists
       if (!fs.existsSync(iniPath)) {
         this.configurePhpIni(version);
       }
 
-      // 1. Get php -v
-      try {
-        const vOutput = execSync(`"${phpExe}" -v`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      const phpCode = `echo json_encode([
+        'memory_limit' => ini_get('memory_limit'),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size' => ini_get('post_max_size'),
+        'max_execution_time' => ini_get('max_execution_time'),
+        'max_input_time' => ini_get('max_input_time'),
+        'date.timezone' => ini_get('date.timezone') ?: 'UTC',
+        'display_errors' => ini_get('display_errors'),
+        'error_reporting' => ini_get('error_reporting'),
+        'opcache.enable' => ini_get('opcache.enable'),
+        'short_open_tag' => ini_get('short_open_tag'),
+        'xdebug_loaded' => extension_loaded('xdebug'),
+        'xdebug_version' => extension_loaded('xdebug') ? (phpversion('xdebug') ?: '') : '',
+        'xdebug_mode' => ini_get('xdebug.mode') ?: '',
+        'xdebug_port' => ini_get('xdebug.client_port') ?: '',
+        'xdebug_idekey' => ini_get('xdebug.idekey') ?: '',
+        'xdebug_start_with_request' => ini_get('xdebug.start_with_request') ?: ''
+      ]);`;
+
+      const [vRes, mRes, iniRes] = await Promise.all([
+        execAsync(`"${phpExe}" -v`, { encoding: 'utf-8', timeout: 3000, windowsHide: true }).catch(() => null),
+        execAsync(`"${phpExe}" -d xdebug.mode=off -m`, { encoding: 'utf-8', timeout: 3000, windowsHide: true }).catch(() => null),
+        execAsync(`"${phpExe}" -d xdebug.mode=off -r "${phpCode.replace(/\r?\n/g, ' ')}"`, { encoding: 'utf-8', timeout: 3000, windowsHide: true }).catch(() => null)
+      ]);
+
+      // 1. Parse php -v
+      if (vRes && vRes.stdout) {
+        const vOutput = vRes.stdout.trim();
         buildInfo = vOutput.split(/\r?\n/)[0] || '';
         if (vOutput.includes('NTS')) threadSafety = 'NTS';
         else if (vOutput.includes('TS')) threadSafety = 'TS';
@@ -944,39 +971,21 @@ call "%~dp0php.bat" "%~dp0composer.phar" %*
           const match = vOutput.match(/Visual C\+\+ [0-9]+/);
           if (match) compiler = match[0];
         }
-      } catch {}
+      }
 
-      // 2. Get loaded modules php -m
-      try {
-        const mOutput = execSync(`"${phpExe}" -d xdebug.mode=off -m`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
-        extensions = mOutput.split(/\r?\n/)
+      // 2. Parse loaded modules php -m
+      if (mRes && mRes.stdout) {
+        extensions = mRes.stdout.split(/\r?\n/)
           .map(s => s.trim())
           .filter(s => s && !s.startsWith('[') && !s.endsWith(']'));
-      } catch {}
+      }
 
-      // 3. Get key ini directives & Xdebug
-      try {
-        const phpCode = `echo json_encode([
-          'memory_limit' => ini_get('memory_limit'),
-          'upload_max_filesize' => ini_get('upload_max_filesize'),
-          'post_max_size' => ini_get('post_max_size'),
-          'max_execution_time' => ini_get('max_execution_time'),
-          'max_input_time' => ini_get('max_input_time'),
-          'date.timezone' => ini_get('date.timezone') ?: 'UTC',
-          'display_errors' => ini_get('display_errors'),
-          'error_reporting' => ini_get('error_reporting'),
-          'opcache.enable' => ini_get('opcache.enable'),
-          'short_open_tag' => ini_get('short_open_tag'),
-          'xdebug_loaded' => extension_loaded('xdebug'),
-          'xdebug_version' => extension_loaded('xdebug') ? (phpversion('xdebug') ?: '') : '',
-          'xdebug_mode' => ini_get('xdebug.mode') ?: '',
-          'xdebug_port' => ini_get('xdebug.client_port') ?: '',
-          'xdebug_idekey' => ini_get('xdebug.idekey') ?: '',
-          'xdebug_start_with_request' => ini_get('xdebug.start_with_request') ?: ''
-        ]);`;
-        const iniOutput = execSync(`"${phpExe}" -d xdebug.mode=off -r "${phpCode.replace(/\r?\n/g, ' ')}"`, { encoding: 'utf-8', timeout: 3000, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
-        iniValues = JSON.parse(iniOutput.trim());
-      } catch {}
+      // 3. Parse key ini directives & Xdebug
+      if (iniRes && iniRes.stdout) {
+        try {
+          iniValues = JSON.parse(iniRes.stdout.trim());
+        } catch {}
+      }
 
       // 4. Scan available extension DLLs in ext/
       if (fs.existsSync(extDir)) {

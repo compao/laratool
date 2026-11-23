@@ -128,10 +128,15 @@ class ProjectScanner {
 
     // Sync Nginx configurations
     if (nginxManager.isInstalled()) {
+      let nginxChanged = false;
       for (const site of detectedSites) {
-        await nginxManager.generateSiteConfig(site);
+        if (await nginxManager.generateSiteConfig(site)) {
+          nginxChanged = true;
+        }
       }
-      await nginxManager.reload();
+      if (nginxChanged) {
+        await nginxManager.reload();
+      }
     }
 
     // Automatically sync domains to Windows hosts file

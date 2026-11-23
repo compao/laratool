@@ -7,6 +7,24 @@ class ProcessSupervisor {
   constructor() {
     this.processes = new Map(); // key -> { pid, child, logStream, status, stopping }
     this.crashCounts = new Map();
+    this.isShuttingDown = false;
+    this.isRestoring = false;
+  }
+
+  /**
+   * Persist currently running service names to config.json for startup restoration
+   */
+  saveServicesState() {
+    if (this.isShuttingDown || this.isRestoring) return;
+    const runningServices = [];
+    for (const [name, rec] of this.processes.entries()) {
+      if (rec.status === 'running' && !rec.stopping) {
+        runningServices.push(name);
+      }
+    }
+    try {
+      systemHelper.saveConfig({ runningServices });
+    } catch (e) {}
   }
 
   /**
@@ -174,6 +192,7 @@ class ProcessSupervisor {
 
     this.processes.set(name, record);
     this.savePidRegistry();
+    this.saveServicesState();
     return record;
   }
 
@@ -193,6 +212,7 @@ class ProcessSupervisor {
         this.safeEnd(record.logStream);
         this.processes.delete(name);
         this.savePidRegistry();
+        this.saveServicesState();
         resolve(true);
       });
     });
@@ -210,6 +230,8 @@ class ProcessSupervisor {
    * Stop all active managed processes on shutdown
    */
   async stopAll() {
+    this.saveServicesState();
+    this.isShuttingDown = true;
     const names = Array.from(this.processes.keys());
     for (const name of names) {
       await this.stop(name);

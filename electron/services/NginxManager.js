@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const { exec, execSync } = require('child_process');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 const systemHelper = require('./SystemHelper');
 const supervisor = require('./ProcessSupervisor');
 const certificateManager = require('./CertificateManager');
@@ -268,7 +270,15 @@ server {
     }
 }
 `;
+    if (fs.existsSync(confFile)) {
+      try {
+        if (fs.readFileSync(confFile, 'utf-8') === content) {
+          return false;
+        }
+      } catch {}
+    }
     fs.writeFileSync(confFile, content, 'utf-8');
+    return true;
   }
 
   removeSiteConfig(siteName) {
@@ -296,7 +306,7 @@ server {
         try {
           const orphanPid = fs.readFileSync(pidFile, 'utf-8').trim();
           if (orphanPid) {
-            execSync(`taskkill /pid ${orphanPid} /f /t`, { windowsHide: true, stdio: 'ignore' });
+            await execAsync(`taskkill /pid ${orphanPid} /f /t`, { windowsHide: true }).catch(() => {});
             await new Promise(r => setTimeout(r, 300));
           }
         } catch {}
@@ -319,6 +329,9 @@ server {
 
   async reload() {
     if (!this.isInstalled()) return { success: false };
+    if (!supervisor.isRunning('nginx')) {
+      return { success: true, skipped: true };
+    }
 
     // On Windows, 'nginx -s reload' frequently fails to terminate old worker processes,
     // which leaves stale sockets holding outdated certificates in memory.
@@ -341,7 +354,7 @@ server {
       try {
         const pid = fs.readFileSync(pidFile, 'utf-8').trim();
         if (pid) {
-          execSync(`taskkill /pid ${pid} /f /t`, { windowsHide: true, stdio: 'ignore' });
+          await execAsync(`taskkill /pid ${pid} /f /t`, { windowsHide: true }).catch(() => {});
         }
       } catch (e) {}
     }

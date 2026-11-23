@@ -15,6 +15,8 @@ const projectCreator = require('./services/ProjectCreator');
 const preinstalledTools = require('./services/PreinstalledTools');
 
 let mainWindow = null;
+let splashWindow = null;
+let splashShownAt = 0;
 let tray = null;
 let rendererReady = false;
 const pendingMainErrors = [];
@@ -76,6 +78,60 @@ function getTrayIcon() {
   );
 }
 
+function createSplashWindow() {
+  if (splashWindow && !splashWindow.isDestroyed()) return;
+
+  const windowIconPath = path.join(__dirname, 'assets', 'tray.png');
+  splashShownAt = Date.now();
+
+  splashWindow = new BrowserWindow({
+    width: 340,
+    height: 340,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    movable: true,
+    center: true,
+    skipTaskbar: true,
+    show: false,
+    icon: fs.existsSync(windowIconPath) ? windowIconPath : undefined,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+  splashWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.show();
+    }
+  });
+  splashWindow.on('closed', () => {
+    splashWindow = null;
+  });
+}
+
+function closeSplashAndShowMain() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  const minSplashMs = 900;
+  const elapsed = Date.now() - splashShownAt;
+  const remaining = splashWindow && !splashWindow.isDestroyed() ? Math.max(0, minSplashMs - elapsed) : 0;
+
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+  }, remaining);
+}
+
 function createWindow() {
   Menu.setApplicationMenu(null);
   rendererReady = false;
@@ -87,6 +143,7 @@ function createWindow() {
     height: 740,
     minWidth: 960,
     minHeight: 600,
+    show: false,
     title: 'LaraTool',
     icon: fs.existsSync(windowIconPath) ? windowIconPath : undefined,
     backgroundColor: '#0f172a', // Slate 900
@@ -104,6 +161,10 @@ function createWindow() {
       webSecurity: false,
       webviewTag: true
     }
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    closeSplashAndShowMain();
   });
 
   if (isDev) {
@@ -466,8 +527,49 @@ function setupIpcHandlers() {
   });
 }
 
+async function restoreStartupServices() {
+  const config = systemHelper.getConfig();
+  if (config.autoStartEnvironment === false) return;
+
+  if (Array.isArray(config.runningServices)) {
+    supervisor.isRestoring = true;
+    try {
+      const tasks = config.runningServices.map((serviceName) => {
+        if (serviceName === 'nginx') {
+          if (nginxManager.isInstalled()) {
+            return nginxManager.start().catch(() => {});
+          }
+        } else if (serviceName.startsWith('php-')) {
+          const version = serviceName.slice(4);
+          if (phpManager.isInstalled(version)) {
+            return phpManager.start(version).catch(() => {});
+          }
+        } else if (serviceManager.catalog[serviceName] && serviceManager.isInstalled(serviceName)) {
+          return serviceManager.start(serviceName).catch(() => {});
+        }
+        return Promise.resolve();
+      });
+      await Promise.allSettled(tasks);
+    } finally {
+      supervisor.isRestoring = false;
+      supervisor.saveServicesState();
+    }
+    return;
+  }
+
+  const defPhp = config.defaultPhpVersion || '8.3';
+  if (phpManager.isInstalled(defPhp)) {
+    phpManager.start(defPhp).catch(() => {});
+  }
+  if (nginxManager.isInstalled()) {
+    nginxManager.start().catch(() => {});
+  }
+}
+
 if (gotTheLock) {
   app.whenReady().then(async () => {
+    createSplashWindow();
+
     // Clean up any zombie processes from prior abnormal exits
     await supervisor.cleanupOrphanedPids().catch(() => {});
 
@@ -512,17 +614,8 @@ if (gotTheLock) {
     // Initial setup shims
     await phpManager.ensureShims().catch(() => {});
 
-    // Check auto-start environment setting
-    const config = systemHelper.getConfig();
-    if (config.autoStartEnvironment !== false) {
-      const defPhp = config.defaultPhpVersion || '8.3';
-      if (phpManager.isInstalled(defPhp)) {
-        phpManager.start(defPhp).catch(() => {});
-      }
-      if (nginxManager.isInstalled()) {
-        nginxManager.start().catch(() => {});
-      }
-    }
+    // Restore previously running services (or default PHP + Nginx on first run)
+    await restoreStartupServices().catch(() => {});
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
