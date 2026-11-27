@@ -1,6 +1,6 @@
 {
   "name": "laratool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop PHP, Node and Laravel environment manager like Herd for Windows",
   "main": "electron/main.js",
   "scripts": {
